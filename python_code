@@ -1,1 +1,307 @@
-All the code it here
+All thimport pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns 
+
+
+
+df = pd.read_csv('C:/Users/Sibahle Hashe/Downloads/customer_segmentation.csv')
+
+df.columns
+
+df.info()
+
+df.isna().sum()
+
+df.dropna(inplace = True)
+
+
+df.isna().sum()
+
+
+df["Education"].value_counts()
+
+df["Marital_Status"].value_counts()
+
+df["Dt_Customer"] = pd.to_datetime(df["Dt_Customer"],dayfirst = True)
+
+
+df["Age"] = 2025 - df["Year_Birth"]
+
+df["Age"]
+
+
+df["Total_Children"] = df["Kidhome"] + df["Teenhome"]
+
+df.columns
+
+spends_cols = ["MntWines","MntFruits","MntMeatProducts","MntSweetProducts","MntGoldProds"]
+
+df["Total_Spending"] = df[spends_cols].sum(axis =1)
+
+df["Customer_since"] = (pd.Timestamp("today") - df["Dt_Customer"]).dt.days
+
+df["Customer_since"]
+
+
+
+#Age Destribution
+sns.histplot(df["Age"], bins=30, kde=True)
+plt.title("Age Distribution")
+plt.show()
+
+
+
+#Age Destribution
+
+sns.histplot(df["Income"], bins=30, kde=True)
+plt.title("Income Distribution")
+plt.show()
+
+
+
+sns.boxplot(x= "Education", y = "Income", data = df)
+plt.xticks(rotation= 45)
+plt.title("Income by Education level")
+plt.show()
+
+
+
+corr = df[["Income","Age","Recency","Total_Spending","NumWebPurchases","NumStorePurchases"]]
+
+
+sns.heatmap(corr, annot = True, cmap= "coolwarm")
+plt.title("Correlation Matrix")
+plt.show()
+
+
+pivot_income = df.pivot_table(values="Income", index="Education", columns="Marital_Status", aggfunc="mean")
+
+
+
+group1 = df.groupby("Education")["Total_Spending"].mean().sort_values(ascending=False)
+
+
+group1.plot(kind="bar", color = "skyblue")
+plt.title("Average Spending by Education")
+plt.ylabel("Average Total Spending")
+plt.xticks(rotation = 45)
+plt.show()
+
+
+
+df["AcceptedAny"] = df[["AcceptedCmp1", "AcceptedCmp2", "AcceptedCmp3", "AcceptedCmp4", "AcceptedCmp5", "Response"]].sum(axis=1)
+
+
+
+df["AcceptedAny"] = df["AcceptedAny"].apply(lamba x: 1 if x > 0 else 0)
+
+df["AcceptedAny"].unique()
+
+
+group2 = df.groupby("Marital_Status")["AcceptedAny"].mean().sort_values(ascending = False)
+
+
+group2.plot(kind = "Bar", color = "orange")
+plt.title("Campaign Acceptance Rate by Marital Status")
+plt.ylabel("Acceptance Rate")
+plt.xticks(rotation = 45)
+plt.show()
+
+
+bins = [18, 30, 40, 50, 60, 70, 90]
+
+
+labels = ["18-29","30-39","40-49","50-59","60-69","70+"
+          
+          
+df["AgeGroup"] = pd.cut(df["Age", bins = bins, labels = labels)
+                           
+                           
+df["AgeGroup"]
+
+
+
+group3.plot(kind= "barh" , color = "green")
+plt.title("Average Income by Age Group")
+plt.xlabel("Average Income")
+plt.show
+
+
+
+df.columns
+
+
+Age - Income - Total_Spending - NuWebPurchases - NumStorePurchases - NumWebVisitMonth - Recency
+
+
+
+features = ["Age","Income","Total_spending","NumWebPurchases","NumWebVisitMonth", "Recency"
+
+
+x = df[features].copy()
+
+
+
+
+
+
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+
+
+X_scaler = scaler.fit_transform(X)
+
+
+X_scaler
+
+
+from sklearn.cluster import KMeans
+
+WCSS = []
+
+for i range(2,10):
+    kmeans = KMeans(n_clusters = i)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
+    
+    
+wcss
+plt.plot(range(2,10),wcss,marker = "o")
+plt.title("Elbow Method for Opimal K")
+plt.xlabel("Number of Clusters")
+plt.ylabel("WCSS")
+plt.show()
+
+
+
+
+kmeans = KMeans(n_clusters = 6)
+df["Cluster"] = kmeans.fit_predict(X_scaled)
+
+
+
+df.head()
+
+
+cluster_summary = df.groupby("Cluster")[features].mean()
+
+cluster_summary
+
+
+df["Cluster"].value_counts()
+
+
+from sklearn.decomposition import PCA
+
+pca = PCA(n_components = 2)
+pca_data = pca.fit_transform(X_scaled)
+df["PCA1"], df["PCA2"] = pca_data[:0], pca_data[:1]
+
+
+sns.scatterplot(x = "PCA2", y = "PCA2" , hue = "Cluster", data = df, palette = "Set1")
+plt.title("Customer Segmentation (PCA)")
+plt.show()
+
+
+
+
+cluster_summary
+
+
+Cluster 0 High Income spending 
+Cluster 2 High web purchases low store purchases -> digital buyers 
+Clsuter 5 Low recency inactive -> Dormant Customer 
+Cluster 6 Low income , low spending -> Budget Customers
+
+
+
+
+import joblib
+
+joblib.dump(kmeans, "kmeans_model.plk")
+joblib.dump(scaler, "scaler.plk")
+
+
+
+
+
+#Streamlit Application
+
+import stramlit as st
+import pandas as pd
+import numpy as np
+import joblib
+
+
+kmeans = joblib.load("kmeans_model.pkl")
+scaler = jonlib.load("scaler.plk")
+
+
+st.title("Customer segmentation App")
+st.write("Enter customer details tp predicts the segmentation")
+
+
+age = st.number_input("Age",min_value=18, max_value= 100, value=35)
+income = st.number_input("Income",min_value=0, max_value = 200000, value =50000)
+total_spending = st.number_input("Total Spending(sum of purchases)",min_value = 0, max_value = 5000, value = 1000)
+num_web_purchases = st.number_input("NUmmber of Web Purchases",min_value=0, max_value=100, value = 10 )
+num_store_purchases = st.number_input("Number of Store Purchases",min_value=0, max_value=100, value=10)
+num_web_visits = st.number_input("Number of Web Visits per month",min_value=0, max_value=50, value = 3)
+recency =  st.number_input(" Recey (days since last purchases)",min_value=0, max_value=365, value=30)
+
+
+
+
+input_data = pd.Dataframe({
+    "Age" : [age],
+    "Income" : [Income],
+    "total_spending" : [total_spending],
+    "num_web_purchases" : [num_web_purchases],
+    "num_web_visits" : [num_web_visits],
+    "recency" : [recency],
+    
+    })
+
+
+input_scaled = scaler.transform(input_data)
+
+if st.button("Predict Segment"):
+    
+    cluster = kmeans.predict(input_scaled())[0]
+    
+    st.success(f"Predicted Segment: Cluster {cluster}")
+    
+    
+    st.write("""
+             Cluster 0 a; High budget, web visisters
+             Cluster 1 a; High spending, web visisters
+             Cluster 0 a; High budget, web visisters
+        
+        """
+        
+        
+        )
+            
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+e code it here
